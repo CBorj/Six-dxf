@@ -12,7 +12,6 @@ desktop.ini
 # Archivos de AutoCAD temporales
 *.dwl
 *.dwl2
-*.bak
 *.dmp
 
 # Archivos de respaldo
