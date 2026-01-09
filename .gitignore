@@ -1,0 +1,22 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+*~
+
+# Archivos de AutoCAD temporales
+*.dwl
+*.dwl2
+*.dmp
+
+# Archivos de respaldo
+*.old
+*.backup
+
+# Archivos de sistema
+.directory
