@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicador de Capas SVG</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status {
+            margin-top: 15px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Duplicador de Capas SVG</h2>
+    <p>Sube un archivo .svg para duplicar sus elementos internos.</p>
+    
+    <input type="file" id="inputSvg" accept=".svg">
+    <br>
+    <button onclick="procesarSVG()">Procesar y Descargar</button>
+    
+    <div id="status"></div>
+</div>
+
+<script>
+    function procesarSVG() {
+        const input = document.getElementById('inputSvg');
+        const status = document.getElementById('status');
+
+        if (input.files.length === 0) {
+            status.innerText = "Por favor, selecciona un archivo primero.";
+            return;
+        }
+
+        const archivo = input.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const contenido = e.target.result;
+            
+            // Creamos un parser para manipular el SVG como un documento DOM
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(contenido, "image/svg+xml");
+            const svgElement = xmlDoc.querySelector('svg');
+
+            if (!svgElement) {
+                status.innerText = "Error: El archivo no parece un SVG válido.";
+                return;
+            }
+
+            // Seleccionamos los hijos directos (capas o formas)
+            const capasOriginales = Array.from(svgElement.children);
+
+            capasOriginales.forEach((capa, index) => {
+                // Clonamos la capa (true para clonar hijos)
+                const copia = capa.cloneNode(true);
+                
+                // Modificamos el ID si existe para evitar duplicados
+                if (copia.hasAttribute('id')) {
+                    copia.setAttribute('id', copia.getAttribute('id') + '_copia');
+                }
+                
+                // Opcional: Podrías añadir una transformación aquí si quisieras verlas separadas
+                // copia.setAttribute('transform', 'translate(10, 10)');
+
+                // Añadimos la copia al final del SVG
+                svgElement.appendChild(copia);
+            });
+
+            // Convertimos el XML de nuevo a texto
+            const serializer = new XMLSerializer();
+            const nuevoSvgTexto = serializer.serializeToString(xmlDoc);
+
+            // Creamos la descarga
+            descargarArchivo(nuevoSvgTexto, "duplicado_" + archivo.name);
+            status.innerText = "¡Archivo procesado y descargado!";
+        };
+
+        reader.readAsText(archivo);
+    }
+
+    function descargarArchivo(contenido, nombreArchivo) {
+        const blob = new Blob([contenido], {type: "image/svg+xml"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        a.href = url;
+        a.download = nombreArchivo;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpieza
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 0);
+    }
+</script>
+
+</body>
+</html>
