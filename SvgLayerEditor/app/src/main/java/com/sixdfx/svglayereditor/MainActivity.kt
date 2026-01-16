@@ -21,12 +21,21 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sixdfx.svglayereditor.model.EditorAction
+import com.sixdfx.svglayereditor.ui.ConversionScreen
 import com.sixdfx.svglayereditor.ui.EditorScreen
 import com.sixdfx.svglayereditor.ui.FilePickerDialog
 import com.sixdfx.svglayereditor.ui.theme.SvgLayerEditorTheme
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
+
+/**
+ * Pantallas de navegación de la app
+ */
+sealed class AppScreen {
+    object Editor : AppScreen()
+    object Conversion : AppScreen()
+}
 
 class MainActivity : ComponentActivity() {
     
@@ -75,6 +84,15 @@ class MainActivity : ComponentActivity() {
         val state by viewModel.state.collectAsState()
         val coroutineScope = rememberCoroutineScope()
         
+        // Estado de navegación
+        var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Editor) }
+        
+        // Estado para el G-code generado (para enviar a la máquina)
+        var generatedGcode by remember { mutableStateOf<String?>(null) }
+        
+        // Estado para saber si después de cargar archivo debe ir a conversión
+        var navigateToConversionAfterLoad by remember { mutableStateOf(false) }
+        
         // Estado para el explorador de archivos
         var showFilePicker by remember { mutableStateOf(false) }
         var svgFiles by remember { mutableStateOf<List<SvgFileInfo>>(emptyList()) }
@@ -111,13 +129,21 @@ class MainActivity : ComponentActivity() {
                     val fileName = getFileName(selectedUri) ?: "archivo.svg"
                     val content = readFileContent(selectedUri)
                     viewModel.dispatch(EditorAction.LoadFile(fileName, content))
+                    // Si debe navegar a conversión después de cargar
+                    if (navigateToConversionAfterLoad) {
+                        currentScreen = AppScreen.Conversion
+                        navigateToConversionAfterLoad = false
+                    }
                 } catch (e: Exception) {
                     Toast.makeText(
                         this@MainActivity,
                         "Error al leer el archivo: ${e.message}",
                         Toast.LENGTH_LONG
                     ).show()
+                    navigateToConversionAfterLoad = false
                 }
+            } ?: run {
+                navigateToConversionAfterLoad = false
             }
         }
         
@@ -189,15 +215,53 @@ class MainActivity : ComponentActivity() {
             }
         }
         
-        EditorScreen(
-            state = state,
-            onAction = { action -> viewModel.dispatch(action) },
-            onSelectFile = { openFilePicker() },
-            onSaveFile = { content ->
-                val baseName = state.fileName.substringBeforeLast(".")
-                saveFileLauncher.launch("${baseName}_modificado.svg")
+        // Navegación entre pantallas
+        when (currentScreen) {
+            is AppScreen.Editor -> {
+                EditorScreen(
+                    state = state,
+                    onAction = { action -> viewModel.dispatch(action) },
+                    onSelectFile = { openFilePicker() },
+                    onSaveFile = { _ ->
+                        val baseName = state.fileName.substringBeforeLast(".")
+                        saveFileLauncher.launch("${baseName}_modificado.svg")
+                    },
+                    onNavigateToConversion = {
+                        if (state.workingLayers.isNotEmpty()) {
+                            currentScreen = AppScreen.Conversion
+                        } else {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Primero carga un archivo SVG",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    onSelectFileForConversion = {
+                        navigateToConversionAfterLoad = true
+                        openFilePicker()
+                    }
+                )
             }
-        )
+            
+            is AppScreen.Conversion -> {
+                ConversionScreen(
+                    layers = state.workingLayers,
+                    onBack = { currentScreen = AppScreen.Editor },
+                    onConversionComplete = { gcode ->
+                        generatedGcode = gcode
+                        // Aquí se puede añadir la navegación a la pantalla de envío
+                        Toast.makeText(
+                            this@MainActivity,
+                            "G-code generado: ${gcode.lines().size} líneas",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        // Por ahora volver al editor
+                        currentScreen = AppScreen.Editor
+                    }
+                )
+            }
+        }
         
         // Diálogo del explorador de archivos
         if (showFilePicker) {

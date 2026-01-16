@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Layer Editor - Prototipo Láser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: #16213e;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .status-bar {
+            height: 44px;
+            background: #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .screen {
+            display: none;
+            height: calc(100% - 44px);
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Header */
+        .header {
+            background: #0f3460;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 20px;
+            flex: 1;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .header-icon {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* Cards */
+        .card {
+            background: #1f4068;
+            margin: 16px;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .card-title {
+            color: #4ecca3;
+            font-size: 14px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Connection */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff6b6b;
+        }
+
+        .status-dot.connected {
+            background: #4ecca3;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            color: white;
+            flex: 1;
+        }
+
+        .status-ip {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* Input fields */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            color: #888;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-field {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-size: 16px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #4ecca3;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #4ecca3;
+            color: #1a1a2e;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: #3db892;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #feca57;
+            color: #1a1a2e;
+        }
+
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .slider-label {
+            color: white;
+            font-size: 14px;
+        }
+
+        .slider-value {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.2);
+            appearance: none;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4ecca3;
+            cursor: pointer;
+        }
+
+        /* Layer list */
+        .layer-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .layer-checkbox {
+            width: 24px;
+            height: 24px;
+            accent-color: #4ecca3;
+        }
+
+        .layer-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .layer-name {
+            color: white;
+            flex: 1;
+        }
+
+        .layer-params {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* Preview area */
+        .preview-area {
+            background: #0a0a15;
+            border-radius: 8px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(78, 204, 163, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(78, 204, 163, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .preview-svg {
+            position: relative;
+            z-index: 1;
+            font-size: 48px;
+        }
+
+        .preview-bounds {
+            position: absolute;
+            border: 2px dashed #4ecca3;
+            width: 60%;
+            height: 60%;
+        }
+
+        /* Progress */
+        .progress-container {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .progress-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(#4ecca3 0deg, #4ecca3 var(--progress, 0deg), rgba(255,255,255,0.1) var(--progress, 0deg));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            position: relative;
+        }
+
+        .progress-inner {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #16213e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-percent {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .progress-label {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .progress-status {
+            color: white;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .progress-detail {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .control-buttons .btn {
+            flex: 1;
+            max-width: 150px;
+        }
+
+        /* Machine status */
+        .machine-status {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #4ecca3;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            color: #888;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #4ecca3;
+            color: #1a1a2e;
+        }
+
+        /* Select dropdown */
+        .select-field {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-size: 16px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .select-field option {
+            background: #1f4068;
+        }
+
+        /* Bottom nav */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: #0f3460;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #888;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: #4ecca3;
+        }
+
+        .nav-item span {
+            font-size: 12px;
+        }
+
+        /* Floating button */
+        .fab {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #4ecca3;
+            border: none;
+            color: #1a1a2e;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(78, 204, 163, 0.4);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1f4068;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .modal-title {
+            color: white;
+            font-size: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+        }
+
+        /* Warning banner */
+        .warning-banner {
+            background: #fff3e0;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .warning-icon {
+            color: #e65100;
+            font-size: 24px;
+        }
+
+        .warning-text {
+            flex: 1;
+            color: #e65100;
+            font-size: 13px;
+        }
+
+        .warning-btn {
+            background: #e65100;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Scan animation */
+        .scanning {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .scan-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: scan 2s infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.95); }
+        }
+
+        .scan-text {
+            color: white;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .scan-detail {
+            color: #888;
+            font-size: 14px;
+        }
+
+        /* Navigation hint */
+        .nav-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="status-bar">
+            <span>9:41</span>
+            <span>📶 🔋</span>
+        </div>
+
+        <!-- PANTALLA 1: Editor Principal -->
+        <div class="screen active" id="screen-editor">
+            <div class="header">
+                <h1>SVG Layer Editor</h1>
+                <button class="header-icon" onclick="showScreen('screen-files')">📁</button>
+            </div>
+
+            <div class="preview-area">
+                <div class="preview-grid"></div>
+                <div class="preview-bounds"></div>
+                <div class="preview-svg">🎨</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📑 Capas del SVG</div>
+                
+                <div class="layer-item">
+                    <input type="checkbox" class="layer-checkbox" checked>
+                    <div class="layer-color" style="background: #ff6b6b"></div>
+                    <span class="layer-name">Contorno</span>
+                    <span class="layer-params">Line</span>
+                </div>
+                
+                <div class="layer-item">
+                    <input type="checkbox" class="layer-checkbox" checked>
+                    <div class="layer-color" style="background: #4ecdc4"></div>
+                    <span class="layer-name">Relleno</span>
+                    <span class="layer-params">Fill</span>
+                </div>
+                
+                <div class="layer-item">
+                    <input type="checkbox" class="layer-checkbox">
+                    <div class="layer-color" style="background: #ffe66d"></div>
+                    <span class="layer-name">Texto</span>
+                    <span class="layer-params">Line</span>
+                </div>
+            </div>
+
+            <button class="fab" onclick="showScreen('screen-laser')">⚡</button>
+
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <span>✏️</span>
+                    <span>Editar</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-laser')">
+                    <span>⚡</span>
+                    <span>Láser</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-settings')">
+                    <span>⚙️</span>
+                    <span>Ajustes</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANTALLA 2: Configuración Láser -->
+        <div class="screen" id="screen-laser">
+            <div class="header">
+                <button class="back-btn" onclick="showScreen('screen-editor')">←</button>
+                <h1>Configurar Grabado</h1>
+            </div>
+
+            <!-- Conexión -->
+            <div class="card">
+                <div class="card-title">🔗 Conexión</div>
+                
+                <div class="connection-status" onclick="showScreen('screen-connect')">
+                    <div class="status-dot" id="conn-dot"></div>
+                    <div>
+                        <div class="status-text" id="conn-text">No conectado</div>
+                        <div class="status-ip" id="conn-ip">Toca para conectar</div>
+                    </div>
+                    <span style="color: #888">→</span>
+                </div>
+            </div>
+
+            <!-- Parámetros -->
+            <div class="card">
+                <div class="card-title">⚡ Parámetros</div>
+                
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Velocidad</span>
+                        <span class="slider-value"><span id="speed-val">3000</span> mm/min</span>
+                    </div>
+                    <input type="range" class="slider" min="500" max="6000" value="3000" 
+                           oninput="document.getElementById('speed-val').textContent = this.value">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Potencia</span>
+                        <span class="slider-value"><span id="power-val">80</span>%</span>
+                    </div>
+                    <input type="range" class="slider" min="0" max="100" value="80"
+                           oninput="document.getElementById('power-val').textContent = this.value">
+                </div>
+
+                <div class="input-group">
+                    <label>Pasadas</label>
+                    <div class="input-row">
+                        <select class="select-field">
+                            <option>1 pasada</option>
+                            <option>2 pasadas</option>
+                            <option>3 pasadas</option>
+                            <option>5 pasadas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Precisión</label>
+                    <div class="tabs">
+                        <div class="tab">Ultra Fine</div>
+                        <div class="tab active">Fine</div>
+                        <div class="tab">Fast</div>
+                        <div class="tab">Ultra Fast</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Capas seleccionadas -->
+            <div class="card">
+                <div class="card-title">📑 Capas a grabar</div>
+                
+                <div class="layer-item">
+                    <input type="checkbox" class="layer-checkbox" checked>
+                    <div class="layer-color" style="background: #ff6b6b"></div>
+                    <span class="layer-name">Contorno</span>
+                    <span class="layer-params">3000/80%</span>
+                </div>
+                
+                <div class="layer-item">
+                    <input type="checkbox" class="layer-checkbox" checked>
+                    <div class="layer-color" style="background: #4ecdc4"></div>
+                    <span class="layer-name">Relleno</span>
+                    <span class="layer-params">3000/80%</span>
+                </div>
+            </div>
+
+            <div style="padding: 16px;">
+                <button class="btn btn-primary" onclick="checkConnectionAndSend()">
+                    📤 ENVIAR A MÁQUINA
+                </button>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-editor')">
+                    <span>✏️</span>
+                    <span>Editar</span>
+                </div>
+                <div class="nav-item active">
+                    <span>⚡</span>
+                    <span>Láser</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-settings')">
+                    <span>⚙️</span>
+                    <span>Ajustes</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANTALLA 3: Conectar -->
+        <div class="screen" id="screen-connect">
+            <div class="header">
+                <button class="back-btn" onclick="showScreen('screen-laser')">←</button>
+                <h1>Conectar Máquina</h1>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📡 Modo de conexión</div>
+                <div class="tabs">
+                    <div class="tab active" onclick="setMode('ap')">AP</div>
+                    <div class="tab" onclick="setMode('sta')">STA (Router)</div>
+                </div>
+            </div>
+
+            <div class="card" id="ap-config">
+                <div class="card-title">📶 Modo AP (Access Point)</div>
+                <p style="color: #888; font-size: 14px; margin-bottom: 16px;">
+                    Conéctate a la red WiFi del láser
+                </p>
+                
+                <div class="input-group">
+                    <label>Red WiFi</label>
+                    <input type="text" class="input-field" value="LongerLaser_8E98" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <input type="text" class="input-field" value="12345678" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>IP del láser</label>
+                    <input type="text" class="input-field" value="192.168.0.1" id="ip-address">
+                </div>
+                
+                <div class="input-group">
+                    <label>Puerto</label>
+                    <input type="text" class="input-field" value="8847" readonly>
+                </div>
+            </div>
+
+            <div style="padding: 16px;">
+                <button class="btn btn-secondary" onclick="showScreen('screen-scanning')" style="margin-bottom: 12px;">
+                    🔍 Escanear Red
+                </button>
+                <button class="btn btn-primary" onclick="simulateConnect()">
+                    ✓ Conectar
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 4: Escaneando -->
+        <div class="screen" id="screen-scanning">
+            <div class="header">
+                <button class="back-btn" onclick="showScreen('screen-connect')">←</button>
+                <h1>Buscando...</h1>
+            </div>
+
+            <div class="scanning">
+                <div class="scan-icon">📡</div>
+                <div class="scan-text">Buscando dispositivos</div>
+                <div class="scan-detail">Escaneando red local...</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📱 Dispositivos encontrados</div>
+                
+                <div class="layer-item" onclick="selectDevice('192.168.0.1')" style="cursor: pointer">
+                    <span style="font-size: 24px">⚡</span>
+                    <div style="flex: 1">
+                        <div class="layer-name">RAY5 mini</div>
+                        <div style="color: #888; font-size: 12px">192.168.0.1:8847</div>
+                    </div>
+                    <span style="color: #4ecca3">●</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANTALLA 5: Preview y envío -->
+        <div class="screen" id="screen-preview">
+            <div class="header">
+                <button class="back-btn" onclick="showScreen('screen-laser')">←</button>
+                <h1>Vista Previa</h1>
+            </div>
+
+            <div class="machine-status">
+                &lt;Idle|MPos:0.000,0.000,0.000|FS:0,0&gt;
+            </div>
+
+            <div class="preview-area" style="height: 250px;">
+                <div class="preview-grid"></div>
+                <div class="preview-bounds"></div>
+                <div class="preview-svg">🎨</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📋 Resumen</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; color: #888; font-size: 14px;">
+                    <div>Capas: <span style="color: white">2</span></div>
+                    <div>Líneas G-code: <span style="color: white">~2,450</span></div>
+                    <div>Tiempo estimado: <span style="color: white">~5 min</span></div>
+                    <div>Tamaño: <span style="color: white">18.5 KB</span></div>
+                </div>
+            </div>
+
+            <div style="padding: 16px; display: flex; gap: 12px;">
+                <button class="btn btn-secondary" style="flex: 1" onclick="simulateFrame()">
+                    🔲 Frame
+                </button>
+                <button class="btn btn-primary" style="flex: 2" onclick="showModal('modal-filename')">
+                    ▶️ Iniciar
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 6: Progreso -->
+        <div class="screen" id="screen-progress">
+            <div class="header">
+                <h1>Grabando...</h1>
+            </div>
+
+            <div class="machine-status" id="machine-status">
+                &lt;Run|MPos:45.230,32.100,0.000|FS:3000,800&gt;
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-circle" id="progress-circle" style="--progress: 0deg">
+                    <div class="progress-inner">
+                        <span class="progress-percent" id="progress-percent">0%</span>
+                        <span class="progress-label">completado</span>
+                    </div>
+                </div>
+
+                <div class="progress-status" id="progress-status">Enviando G-code...</div>
+                <div class="progress-detail" id="progress-detail">Línea 0 / 2450</div>
+
+                <div class="control-buttons">
+                    <button class="btn btn-warning" id="pause-btn" onclick="togglePause()">
+                        ⏸️ Pausar
+                    </button>
+                    <button class="btn btn-danger" onclick="showModal('modal-stop')">
+                        ⏹️ Detener
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📊 Estadísticas</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; color: #888; font-size: 14px;">
+                    <div>Tiempo: <span style="color: white" id="elapsed-time">00:00</span></div>
+                    <div>Restante: <span style="color: white" id="remaining-time">~5:00</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANTALLA 7: Completado -->
+        <div class="screen" id="screen-complete">
+            <div class="header">
+                <h1>¡Completado!</h1>
+            </div>
+
+            <div style="text-align: center; padding: 60px 20px;">
+                <div style="font-size: 80px; margin-bottom: 24px;">✅</div>
+                <h2 style="color: #4ecca3; margin-bottom: 8px;">Trabajo finalizado</h2>
+                <p style="color: #888; margin-bottom: 32px;">El grabado se ha completado correctamente</p>
+
+                <div class="card" style="text-align: left;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; color: #888; font-size: 14px;">
+                        <div>Archivo:</div>
+                        <div style="color: white">longer_003</div>
+                        <div>Duración:</div>
+                        <div style="color: white">4:32</div>
+                        <div>Líneas enviadas:</div>
+                        <div style="color: white">2,450</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="margin-top: 24px" onclick="showScreen('screen-editor')">
+                    ← Volver al Editor
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 8: Ajustes -->
+        <div class="screen" id="screen-settings">
+            <div class="header">
+                <button class="back-btn" onclick="showScreen('screen-editor')">←</button>
+                <h1>Ajustes</h1>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔧 Máquina</div>
+                
+                <div class="input-group">
+                    <label>Área de trabajo</label>
+                    <div class="input-row">
+                        <input type="text" class="input-field" value="130" style="text-align: center"> 
+                        <span style="color: white; padding: 12px">×</span>
+                        <input type="text" class="input-field" value="140" style="text-align: center">
+                        <span style="color: #888; padding: 12px">mm</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Tipo de láser</label>
+                    <select class="select-field">
+                        <option>3.5W 450nm Blue light</option>
+                        <option>2.5W 450nm Blue light</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>S-Value máximo</label>
+                    <input type="text" class="input-field" value="1000">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📡 Conexión guardada</div>
+                
+                <div class="input-group">
+                    <label>Última IP</label>
+                    <input type="text" class="input-field" value="192.168.0.1">
+                </div>
+
+                <div class="input-group">
+                    <label>Puerto</label>
+                    <input type="text" class="input-field" value="8847">
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-editor')">
+                    <span>✏️</span>
+                    <span>Editar</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-laser')">
+                    <span>⚡</span>
+                    <span>Láser</span>
+                </div>
+                <div class="nav-item active">
+                    <span>⚙️</span>
+                    <span>Ajustes</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Nombre de archivo -->
+        <div class="modal" id="modal-filename">
+            <div class="modal-content">
+                <div class="modal-title">Nombre del archivo</div>
+                <input type="text" class="input-field" value="longer_003" id="filename-input">
+                <p style="color: #888; font-size: 12px; margin-top: 8px;">
+                    El archivo se guardará en la memoria de la máquina
+                </p>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="hideModal('modal-filename')">Cancelar</button>
+                    <button class="btn btn-primary" onclick="startEngraving()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Confirmar detener -->
+        <div class="modal" id="modal-stop">
+            <div class="modal-content">
+                <div class="modal-title">⚠️ Detener trabajo</div>
+                <p style="color: #888; text-align: center; margin-bottom: 16px;">
+                    ¿Estás seguro de que quieres detener el grabado actual?
+                </p>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="hideModal('modal-stop')">Cancelar</button>
+                    <button class="btn btn-danger" onclick="stopEngraving()">Detener</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Advertencia seguridad -->
+        <div class="modal" id="modal-safety">
+            <div class="modal-content">
+                <div class="modal-title">⚠️ Advertencia</div>
+                <p style="color: #888; text-align: center; margin-bottom: 8px;">
+                    Antes de continuar, asegúrate de:
+                </p>
+                <ul style="color: #888; font-size: 14px; padding-left: 20px; margin-bottom: 16px;">
+                    <li>Llevar gafas de protección</li>
+                    <li>Verificar el enfoque del láser</li>
+                    <li>Área de trabajo despejada</li>
+                    <li>Ventilación adecuada</li>
+                </ul>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="hideModal('modal-safety')">Cancelar</button>
+                    <button class="btn btn-primary" onclick="confirmSafety()">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-hint">
+        Haz clic en los elementos para navegar • Prototipo interactivo
+    </div>
+
+    <script>
+        let isConnected = false;
+        let isPaused = false;
+        let progressInterval = null;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function setMode(mode) {
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function simulateConnect() {
+            isConnected = true;
+            document.getElementById('conn-dot').classList.add('connected');
+            document.getElementById('conn-text').textContent = 'RAY5 mini';
+            document.getElementById('conn-ip').textContent = '192.168.0.1:8847 • Conectado';
+            showScreen('screen-laser');
+        }
+
+        function selectDevice(ip) {
+            document.getElementById('ip-address').value = ip;
+            showScreen('screen-connect');
+        }
+
+        function checkConnectionAndSend() {
+            if (!isConnected) {
+                showScreen('screen-connect');
+            } else {
+                showModal('modal-safety');
+            }
+        }
+
+        function confirmSafety() {
+            hideModal('modal-safety');
+            showScreen('screen-preview');
+        }
+
+        function simulateFrame() {
+            alert('📍 El láser recorrerá el perímetro del diseño (sin grabar)');
+        }
+
+        function startEngraving() {
+            hideModal('modal-filename');
+            showScreen('screen-progress');
+            simulateProgress();
+        }
+
+        function simulateProgress() {
+            let progress = 0;
+            let seconds = 0;
+            
+            progressInterval = setInterval(() => {
+                progress += 0.5;
+                seconds++;
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    showScreen('screen-complete');
+                    return;
+                }
+
+                const degrees = (progress / 100) * 360;
+                document.getElementById('progress-circle').style.setProperty('--progress', degrees + 'deg');
+                document.getElementById('progress-percent').textContent = Math.round(progress) + '%';
+                document.getElementById('progress-detail').textContent = `Línea ${Math.round(progress * 24.5)} / 2450`;
+                
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                document.getElementById('elapsed-time').textContent = 
+                    `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                
+                const remaining = Math.max(0, 300 - seconds);
+                const remMins = Math.floor(remaining / 60);
+                const remSecs = remaining % 60;
+                document.getElementById('remaining-time').textContent = 
+                    `~${remMins}:${remSecs.toString().padStart(2, '0')}`;
+
+                // Simular posición
+                const x = (Math.random() * 100).toFixed(3);
+                const y = (Math.random() * 100).toFixed(3);
+                document.getElementById('machine-status').textContent = 
+                    `<Run|MPos:${x},${y},0.000|FS:3000,800>`;
+
+            }, 100);
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pause-btn');
+            
+            if (isPaused) {
+                clearInterval(progressInterval);
+                btn.innerHTML = '▶️ Reanudar';
+                document.getElementById('progress-status').textContent = 'Pausado';
+                document.getElementById('machine-status').textContent = '<Hold|MPos:45.230,32.100,0.000|FS:0,0>';
+            } else {
+                simulateProgress();
+                btn.innerHTML = '⏸️ Pausar';
+                document.getElementById('progress-status').textContent = 'Enviando G-code...';
+            }
+        }
+
+        function stopEngraving() {
+            clearInterval(progressInterval);
+            hideModal('modal-stop');
+            showScreen('screen-laser');
+            
+            // Reset
+            document.getElementById('progress-circle').style.setProperty('--progress', '0deg');
+            document.getElementById('progress-percent').textContent = '0%';
+        }
+
+        // Tab clicks
+        document.querySelectorAll('.tabs .tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                this.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

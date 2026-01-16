@@ -31,10 +31,11 @@ fun EditorScreen(
     onAction: (EditorAction) -> Unit,
     onSelectFile: () -> Unit,
     onSaveFile: (String) -> Unit,
+    onNavigateToConversion: () -> Unit = {},
+    onSelectFileForConversion: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val primaryColor = Color(0xFF6B4E9B)
-    val gradientColors = listOf(Color(0xFF6B4E9B), Color(0xFF9B6B9B))
     
     Scaffold(
         topBar = {
@@ -103,24 +104,44 @@ fun EditorScreen(
                             )
                         }
                         
-                        // Botón confirmar
-                        Button(
-                            onClick = {
-                                onAction(EditorAction.ConfirmChanges)
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = primaryColor
-                            ),
-                            shape = RoundedCornerShape(24.dp),
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Confirmar y Guardar")
+                            // Botón láser
+                            OutlinedButton(
+                                onClick = onNavigateToConversion,
+                                shape = RoundedCornerShape(24.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Bolt,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = Color(0xFFFF9800)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Láser", color = Color(0xFFFF9800))
+                            }
+                            
+                            // Botón confirmar
+                            Button(
+                                onClick = {
+                                    onAction(EditorAction.ConfirmChanges)
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = primaryColor
+                                ),
+                                shape = RoundedCornerShape(24.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Guardar")
+                            }
                         }
                     }
                 }
@@ -144,7 +165,8 @@ fun EditorScreen(
                 state.fileName.isEmpty() -> {
                     // Pantalla inicial
                     WelcomeScreen(
-                        onSelectFile = onSelectFile,
+                        onEditSvg = onSelectFile,
+                        onConvertToGcode = onSelectFileForConversion,
                         primaryColor = primaryColor
                     )
                 }
@@ -256,7 +278,8 @@ fun EditorScreen(
 
 @Composable
 fun WelcomeScreen(
-    onSelectFile: () -> Unit,
+    onEditSvg: () -> Unit,
+    onConvertToGcode: () -> Unit,
     primaryColor: Color
 ) {
     Column(
@@ -287,7 +310,7 @@ fun WelcomeScreen(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Duplica, renombra, reordena y elimina\ncapas de tus archivos SVG",
+            text = "Edita capas SVG y convierte a G-code\npara grabado láser",
             fontSize = 16.sp,
             color = Color.Gray,
             textAlign = TextAlign.Center
@@ -295,27 +318,54 @@ fun WelcomeScreen(
         
         Spacer(modifier = Modifier.height(48.dp))
         
+        // Botón Editar SVG
         Button(
-            onClick = onSelectFile,
+            onClick = onEditSvg,
             colors = ButtonDefaults.buttonColors(
                 containerColor = primaryColor
             ),
             shape = RoundedCornerShape(24.dp),
-            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                imageVector = Icons.Default.FileOpen,
+                imageVector = Icons.Default.Edit,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Seleccionar archivo SVG",
+                text = "Editar SVG",
                 fontSize = 16.sp
             )
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Botón Convertir a G-code
+        OutlinedButton(
+            onClick = onConvertToGcode,
+            shape = RoundedCornerShape(24.dp),
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFFFF9800)
+            ),
+            border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF9800))
+        ) {
+            Icon(
+                imageVector = Icons.Default.Bolt,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Convertir a G-code",
+                fontSize = 16.sp
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
         
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -333,12 +383,11 @@ fun WelcomeScreen(
                     color = Color(0xFF2E7D32)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("• Listar todas las capas del SVG", fontSize = 14.sp)
-                Text("• Duplicar capas existentes", fontSize = 14.sp)
-                Text("• Renombrar capas (ID)", fontSize = 14.sp)
-                Text("• Reordenar con arrastrar y soltar", fontSize = 14.sp)
-                Text("• Eliminar capas duplicadas", fontSize = 14.sp)
-                Text("• Exportar SVG modificado", fontSize = 14.sp)
+                Text("• Editar capas SVG (duplicar, renombrar, reordenar)", fontSize = 14.sp)
+                Text("• Convertir SVG a G-code para láser", fontSize = 14.sp)
+                Text("• Configurar velocidad, potencia y pasadas", fontSize = 14.sp)
+                Text("• Modo vectorial (LINE) o relleno (FILL)", fontSize = 14.sp)
+                Text("• Posicionar imagen en área de trabajo", fontSize = 14.sp)
             }
         }
     }

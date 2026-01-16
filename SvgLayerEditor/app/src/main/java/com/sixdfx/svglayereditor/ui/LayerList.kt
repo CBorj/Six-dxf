@@ -47,7 +47,7 @@ fun LayerList(
         itemsIndexed(
             items = layers,
             key = { _, layer -> layer.id }
-        ) { index, layer ->
+        ) { _, layer ->
             ReorderableItem(reorderState, key = layer.id) { isDragging ->
                 LayerCard(
                     layer = layer,
